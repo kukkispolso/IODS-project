@@ -11,5 +11,4 @@ The text continues here.
 
 I'm excited to see how longitudinal data is analysed using R and try that for myself. The course will probably require loads of work but that's the only way these things can be learned. I got an email about the course and someone recommended it on a previous course, Data Visualization with R.
 
-Here's a link to my GutHub repository:
-[link] (https://github.com/kukkispolso/IODS-project)
+[Here](https://github.com/kukkispolso/IODS-project)'s a link to my GitHub repository.
