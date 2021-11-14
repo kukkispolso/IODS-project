@@ -1,4 +1,4 @@
-# Insert chapter 2 title here
+# Week 2 exercises
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -10,4 +10,61 @@
 date()
 ```
 
-Here we go again...
+**Exercise 1**  
+This is the dataset that will be used for week 2 exercises. Data were collected with a questionnaire during a university course. Seven variables are included in the dataset. Variables for attitude towards statistics (attitude), deep learning (deep), strategic learning (stra), and surface learning (surf) were computed from several items. Students have also reported their gender and age. Additionally, a measure of course achievement (exam points) is included. Of the 183 students who responded to the questionnaire, those with zero points from the exam (n = 17) were excluded from this dataset, leaving 166 students in the dataset.
+```{r}
+students2014 <- read.csv("data/learning2014.csv")
+str(students2014)
+dim(students2014)
+```
+
+**Exercise 2**  
+Here's a graphical overview of the data, namely, scatter plots that show the relationships between the six non-discrete variables in the dataset. Colors represent males and females.
+
+As can be seen in the summary of the gender variable, there are almost twice as many females than males in the dataset. The minimum and maximum values along with the means and medians of all the other variables are shown in the summaries as well.
+
+Based on the plots and the summaries, it seems that most of the students have been in their 20s at the time of the course and that there seems to be a gap in the distribution of exam points somewhere around 15 points. There seems to be a positive relationship between attitude (towards statistics) and exam points.
+```{r}
+students2014$gender <- as.factor(students2014$gender) #changing variable type from character to factor so that it can be used in the visualization
+
+pairs(students2014[-1], col = students2014$gender)
+summary(students2014)
+```
+
+**Exercise 3**  
+Here's a regression model with exam points as the target variable and gender, age, and attitude as the explanatory variables. According to the summary of the fitted model, attitude is a statistically significant predictor of exam points: the better attitude, the more points in the exam.
+
+The summary also reveals that gender and age do not have a significant relationship with exam points. These variables are removed in the second model. I also tried fitting models with one of these two as a second explanatory variable alongside attitude, but the results remained the same.
+
+```{r}
+points_model <- lm(points ~ gender + age + attitude, data = students2014) #gender, age, and attitude as explanatory variables
+summary(points_model)
+
+points_model2 <- lm(points ~ attitude, data = students2014) #only attitude as an explanatory variable
+summary(points_model2)
+```
+
+**Exercise 4**  
+In the second model, exam points are explained by attitude towards statistics. The relationship is statistically significant and positive. The estimate can be interpreted as follows: if attitude increases by one unit, exam points increase by ~0.4 with a standard error of 0.06. With a minimum value of the explanatory variable (i.e., very poor attitude), a student would gain 11.6 points on average (with a std. error of 1.8).
+
+However, the multiple R-squared statistic informs us that only 19% of the variation in exam points can be explained by attitude.
+
+**Exercise 5**  
+These figures represent diagnostics of the model residuals. There are four assumptions concerning the residuals of a regression model (the related diagnostic in parentheses):  
+1. The errors are normally distributed (Q-Q-plot)  
+2. The errors are not correlated #what's the test for this assumption?  
+3. The errors have a constant variance (Residuals vs Fitted)  
+4. The size of a given error does not depend on the explanatory variables (Residuals vs Leverage)  
+(source: DataCamp video 'Model validation', related diagnostics added by me)
+
+As can be seen in the Q-Q-plot, points in the middle fit the line nicely but those in both ends slightly deviate from it. The deviations do not seem radical, suggesting a sufficient normality of the error distribution. However, since I'm not an experienced interpreted of Q-Q-plots, these interpretations should be taken with caution.
+
+The relationship between residuals and model predictions is depicted in the Residuals vs Fitted scatter plot. Any kind of pattern would imply that there is a dependence between size of the errors and the explanatory variable(s). In this case, there seems to be no pattern in the plot, suggesting a constant variance of the errors.
+
+Finally, the Residuals vs Leverage plot shows leverage points in the data. The plot helps to identify points with an unusually high impact on the model. The present model seems not to have points with extremely high leverage, suggesting that the errors are not dependent on the explanatory variables.
+
+All in all, as far as I can tell, the assumptions seem to be met rather well here.
+
+```{r}
+plot(points_model2, which = c(1, 2, 5))
+```
