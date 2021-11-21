@@ -188,7 +188,7 @@ pre code {
 <pre class="r"><code># This is a so-called &quot;R chunk&quot; where you can write R code.
 
 date()</code></pre>
-<pre><code>## [1] &quot;Sun Nov 21 21:01:43 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Sun Nov 21 21:04:09 2021&quot;</code></pre>
 <p>The text continues here.</p>
 <p>I’m excited to see how longitudinal data is analysed using R and try that for myself. The course will probably require loads of work but that’s the only way these things can be learned. I got an email about the course and someone recommended it on a previous course, Data Visualization with R.</p>
 <p><a href="https://github.com/kukkispolso/IODS-project">Here</a>’s a link to my GitHub repository.</p>
@@ -203,7 +203,7 @@ date()</code></pre>
 <li>Assume the reader has no previous knowledge of your data or the more advanced methods you are using.</li>
 </ul>
 <pre class="r"><code>date()</code></pre>
-<pre><code>## [1] &quot;Sun Nov 21 21:01:43 2021&quot;</code></pre>
+<pre><code>## [1] &quot;Sun Nov 21 21:04:09 2021&quot;</code></pre>
 <p><strong>Exercise 1</strong><br />
 This is the dataset that will be used for week 2 exercises. Data were collected with a questionnaire during a university course. Seven variables are included in the dataset. Variables for attitude towards statistics (attitude), deep learning (deep), strategic learning (stra), and surface learning (surf) were computed from several items. Students have also reported their gender and age. Additionally, a measure of course achievement (exam points) is included. Of the 183 students who responded to the questionnaire, those with zero points from the exam (n = 17) were excluded from this dataset, leaving 166 students in the dataset.</p>
 <pre class="r"><code>students2014 &lt;- read.csv(&quot;data/learning2014.csv&quot;)
@@ -485,12 +485,12 @@ Here’s a 10-folded cross-validation of my model. The test set performance of m
 cv &lt;- cv.glm(data = pormat, cost = loss_func, glmfit = model2, K = 10)
 
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.3054054</code></pre>
+<pre><code>## [1] 0.3</code></pre>
 <pre class="r"><code>library(boot)
 cv &lt;- cv.glm(data = pormat, cost = loss_func, glmfit = model2, K = 2)
 
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.3216216</code></pre>
+<pre><code>## [1] 0.3</code></pre>
 </div>
 
 
