@@ -1,0 +1,135 @@
+---
+title: "chapter3"
+output: html_document
+---
+
+**Exercise 2**  
+First, I read the data from my local folder.
+```{r setup}
+getwd()
+pormat <- read.csv("data/pormat.csv", sep = ",", header = T)
+library(tidyr); library(dplyr); library(ggplot2)
+```
+
+The dataset at hand consists of Portuguese secondary school students' (N = 370) background variables and achievement collected from school reports and by self-report questionnaires.
+```{r}
+colnames(pormat)
+```
+
+**Exercise 3**  
+The purpose of your analysis is to study the relationships between high/low alcohol consumption and some of the other variables in the data. To do this, choose 4 interesting variables in the data and for each of them, present your personal hypothesis about their relationships with alcohol consumption.
+
+There are many interesting variables in the data. I chose the following to further explore their relationships with alcohol consumption:
+
+schoolsup - extra educational support (binary: yes or no)
+Medu - mother's education (numeric: 0 - none, 1 - primary education (4th grade), 2 â€“ 5th to 9th grade, 3 â€“ secondary education or 4 â€“ higher education)
+health - current health status (numeric: from 1 - very bad to 5 - very good)
+G3 - final grade (numeric: from 0 to 20, output target)
+
+I think educational support may be positively related to higher consumption. There could be variables that explain both the need for support and alcohol consumption, such as socio-economic status or current health. That's why I have mother's education and health status there, too. I believe these variables are positively related to higher alcohol consumption. Finally, I assume that final grade and high alcohol consumption have a negative relationship.
+
+**Exercise 4**  
+Let's begin by taking a look at my four chosen explanatory variables. Most students seem to come from quite educated families and consider themselves as healthy. The vast majority does not receive extra educational support. Students' grades, although in peculiar order, seem to distribute quite normally.
+```{r}
+pormat %>%
+  select(schoolsup, Medu, health, G3) %>%
+  gather() %>%
+  ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
+```
+
+Next, I grouped the data by high use and summarised the distribution of students according to their consumption status and the chosen variables.
+The non-high users without special support seem to achieve the highest grades, but this might be due to the support status rather that the alcohol consumption status.
+High-consuming students with extra school support report highest health statuses, wchich is slightly surprising to me. However, there weren't many of these students (n = 12). Mother's education seems unrelated to alcohol consumption but somewhat related to support needs.
+Overall, my hypotheses weren't that accurate...
+```{r}
+pormat %>%
+  group_by(high_use, schoolsup) %>%
+  summarise(count = n(), medu = mean(Medu), health = mean(health), grade = mean(G3))
+```
+
+
+**Exercise 5**  
+Now I will fit the logistic regression model. This is done to test my hypothesis that extra educational support, mother's education, health status and final grade might be associated with alcohol consumption.
+As can be seen in the model summary, _only_ grade is a statistically significant predictor of elevated alcohol consumption: students with higher grades are less likely to be high consumers. The effect is not large.
+```{r}
+model1 <- glm(high_use ~ schoolsup + Medu + health + G3, data = pormat, family = "binomial")
+
+summary(model1)
+```
+
+Similarly, while the following table shows that the other variables have 1 in their confidence intervals of the odds ratios, implying a non-signigicant relationship, it is clear that only grade is a statistically significant predictor of high alcohol consumption. The odds ratio of 0.91 suggests that if grade increases by 1, it is 0.91 times as likely to be a high consumer according to the model (that is, there is a ~9% decrease in the likelihood).
+[I'm NOT at all sure if my interpretation was correct, so if it sounds _odd_, please don't get confused!]
+
+```{r}
+# compute odds ratios (OR)
+OR <- coef(model1) %>% exp
+
+# compute confidence intervals (CI)
+CI <- confint(model1) %>% exp
+
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+```
+
+
+**Exercise 6**  
+For the last exercise, I will fit a model with only grade as an explanatory variable.
+
+```{r}
+model2 <- glm(high_use ~ G3, data = pormat, family = "binomial")
+
+summary(model2)
+```
+
+Next, I try to provide a cross tabulation of predictions versus the actual values and display a graphic visualizing both the actual values and the predictions.
+I have no idea what I just did. The model doesn't make sense to me! It seems like the model is highly inaccurate, doesn't it? Unfortunately, I can't afford more time for learning to interpret this kind of models at this point.
+```{r}
+probabilities <- predict(model2, type = "response")
+
+# add the predicted probabilities to 'pormat'
+pormat <- mutate(pormat, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+pormat <- mutate(pormat, prediction = probabilities > 0.5)
+
+# see the last ten original classes, predicted probabilities, and class predictions
+select(pormat, G3, high_use, probability, prediction) %>% tail(10)
+
+# tabulate the target variable versus the predictions
+table(high_use = pormat$high_use, prediction = pormat$prediction)
+
+g <- ggplot(pormat, aes(x = probability, y = high_use, col = prediction))
+
+# define the geom as points and draw the plot
+g + geom_point()
+
+# tabulate the target variable versus the predictions
+table(high_use = pormat$high_use, prediction = pormat$prediction) %>% prop.table() %>% addmargins()
+```
+Last, I will compute the total proportion of inaccurately classified individuals (= the training error) by defining a loss function and computing the average number of wrong predictions.
+In the DataCamp exercises, a similar function resulted in a penalty of 0.26. At least compared to that, the penalty of 0.3 doesn't seem fatal.
+```{r}
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func(class = pormat$high_use, prob = pormat$probability)
+```
+
+
+**Exercise 7**  
+Here's a 10-folded cross-validation of my model. The test set performance of my model is not as good as in the DataCamp exercises, yet not that bad either. I tried a 2-folded cv, which slightly improved the performance, but couldn't find a better model than that.
+```{r}
+library(boot)
+cv <- cv.glm(data = pormat, cost = loss_func, glmfit = model2, K = 10)
+
+cv$delta[1]
+
+library(boot)
+cv <- cv.glm(data = pormat, cost = loss_func, glmfit = model2, K = 2)
+
+cv$delta[1]
+```
+
