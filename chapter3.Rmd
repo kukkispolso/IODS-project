@@ -1,7 +1,4 @@
----
-title: "chapter3"
-output: html_document
----
+# Week 3: Logistic regression
 
 **Exercise 2**  
 First, I read the data from my local folder.
