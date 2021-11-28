@@ -1,0 +1,161 @@
+#Week 4: Clustering and classification
+
+**Exercise 2**  
+Here's the Boston dataset, which contains data of 506 Boston suburbs. There are 14 variables describing housing values, i.e. some socio-economical and geographical features of the Bostonian suburbs. Declaration of all 14 variables can be found [here](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html).
+```{r}
+library(MASS)
+library(dplyr)
+data("Boston")
+glimpse(Boston)
+dim(Boston)
+```
+
+**Exercise 3**  
+Since the pairs-function provided a massive plot with tiny, non-interpretable scatter plots, I decided to compute a correlation matrix instead. After that, I noticed that computing a correlation matrix and visualizing that were also instructed in DataCamp! Great! So, here comes a visualization in which larger dots with more intensive colors indicate a stronger relationship between two variables in the Boston dataset (red = negative correlation, blue = positive correlation). I also printed out the summary statistics of each variable.
+
+As can be seen in the summary statistics, there seems to be a lot of variation within the variables. Based on the visualized correlation matrix, rad and tax have the strongest positive correlation. There is a strong negative correlation are between lstat [lower status of the population] and medv [owner-occupied homes]. Additionally, dis [distance to employment centres] has a strong negative relationship with indus [proportion of non-retail business acres], nox [air pollution], and age [proportion of old buildings]. Chas [does the tract bound the Charles River], on the contrary, is rather unrelated to any of the other variables.
+```{r}
+library(corrplot)
+
+#compute a correlation matrix
+cor_matrix <- cor(Boston)%>%
+  round(digits = 2)
+
+# print the correlation matrix
+cor_matrix
+
+# visualize the correlation matrix
+corrplot(cor_matrix, method="circle", type="upper", cl.pos="b", tl.pos="d", tl.cex = 0.6)
+
+#compute summary statistics
+summary(Boston)
+```
+
+**Exercise 4**  
+Here I standardize the whole dataset. As we see in the summary statistics of the variables, the means are set to zero. 
+```{r}
+boston_scaled <- scale(Boston) #standardize the dataset
+summary(boston_scaled)
+boston_scaled <- as.data.frame(boston_scaled) #change the type
+```
+
+Then, I create a categorical variable of the crime rate in the Boston dataset, with low, medium low, medium high, and high categories included and replace the old crime rate variable with this one.
+```{r}
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+bins
+
+# create a categorical variable 'crime'
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+
+# look at the table of the new factor crime
+table(crime)
+
+# remove original crim from the dataset
+boston_scaled <- select(boston_scaled, -crim)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+```
+
+Last, I divide the dataset to train and test sets.
+```{r}
+# number of rows in the Boston dataset 
+n <- nrow(boston_scaled)
+
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create train set
+train <- boston_scaled[ind,]
+
+# create test set 
+test <- boston_scaled[-ind,]
+```
+
+**Exercise 5**  
+Next, I fit a linear discriminant analysis on the train. In the model, categorical crime rate is predicted by all the other variables in the dataset.
+```{r}
+# linear discriminant analysis
+lda.fit <- lda(crime ~ ., data = train)
+lda.fit
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col = classes, pch = classes) + lda.arrows(lda.fit, myscale = 2)
+```
+
+**Exercise 6**  
+First, I save the crime classes from the test dataset and then modify the dataset by removing the classes. This is done to see how the LDA model performs in predicting the classes.
+The cross tabulation clearly shows that the classifier does good job in predicting crime rates: it mostly predicts the correct classes and most of the incorrect predictions are neighboring classes.
+```{r}
+# save the correct classes from test data
+correct_classes <- test$crime
+
+# remove the crime variable from test data
+test <- select(test, -crime)
+
+# predict classes with test data
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+
+**Exercise 7**  
+In this exercise I will cluster the Boston dataset. For that, the data has to be prepared: reloaded, scaled, and changed from matrix to data frame. I also calculate Euclidean distances between the observations (but decided to hide the long output by saving the matrix as an object).
+```{r}
+#reload and standardize the Boston dataset
+boston2 <- Boston
+scaled2 <- scale(boston2)
+scaled2 <- as.data.frame(boston2)
+
+dist_eu <- dist(boston2) #euclidean distances
+```
+
+First, I run a k-means clustering with a random number of centroids (3). Then I determine the optimal number of clusters using the total WCSS (within cluster sum of squares). In this case, the optimal number is two (see the first figure below). Last, I run the cluster analysis again with the optimal number of clusters determined. Scatter plots of the variables with the two clusters in black and red can be seen below.
+
+It seems that most of the variables are somehow related to the clusters. For example, tax [full-value property-tax rate], ptratio [pupil-teacher ratio], rad [accessibility to radial highways], age [proportion of old buildings], and nox [air pollution] seem highly related to suburb cluster membership. Suburbs high in tax and with a certain, rather high ptratio belong to the red cluster regardless of the values of their neighboring variables. Suburbs with a greater age and an increased nox also tend to belong to the red cluster.
+Chas [does the tract bound the Charles River], in turn, was unrelated to the other variables in terms of correlation (see Exercise 3) and seems also unrelated to the clustering of the suburbs.
+
+Altogether, one interpretation could be that the red cluster comprises of suburbs where most people live: not the downtowns, peripheral areas, or industrial estates with only few inhabitants, but the suburbs where most buildings are dwelling houses.
+```{r}
+# first k-means clustering with a random number of clusters
+km <- kmeans(scaled2, centers = 3)
+
+# set seed so that the results won't change
+set.seed(123)
+
+# determine the number of clusters
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(scaled2, k)$tot.withinss})
+
+# visualize the results
+library(ggplot2)
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+
+# k-means clustering
+km <- kmeans(scaled2, centers = 2)
+
+# plot the Boston dataset with clusters
+pairs(scaled2[1:4], col = km$cluster)
+pairs(scaled2[4:7], col = km$cluster)
+pairs(scaled2[7:10], col = km$cluster)
+pairs(scaled2[10:14], col = km$cluster)
+
+```
+
