@@ -1,4 +1,4 @@
-#Week 4: Clustering and classification
+# Week 4: Clustering and classification
 
 **Exercise 2**  
 Here's the Boston dataset, which contains data of 506 Boston suburbs. There are 14 variables describing housing values, i.e. some socio-economical and geographical features of the Bostonian suburbs. Declaration of all 14 variables can be found [here](https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html).
@@ -52,7 +52,7 @@ crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c
 table(crime)
 
 # remove original crim from the dataset
-boston_scaled <- select(boston_scaled, -crim)
+boston_scaled <- dplyr::select(boston_scaled, -crim)
 
 # add the new categorical value to scaled data
 boston_scaled <- data.frame(boston_scaled, crime)
@@ -105,7 +105,7 @@ The cross tabulation clearly shows that the classifier does good job in predicti
 correct_classes <- test$crime
 
 # remove the crime variable from test data
-test <- select(test, -crime)
+test <- dplyr::select(test, -crime)
 
 # predict classes with test data
 lda.pred <- predict(lda.fit, newdata = test)
@@ -115,14 +115,14 @@ table(correct = correct_classes, predicted = lda.pred$class)
 ```
 
 **Exercise 7**  
-In this exercise I will cluster the Boston dataset. For that, the data has to be prepared: reloaded, scaled, and changed from matrix to data frame. I also calculate Euclidean distances between the observations (but decided to hide the long output by saving the matrix as an object).
+In this exercise I will cluster the Boston dataset. For that, the data has to be prepared: reloaded, scaled, and changed from matrix to data frame. I also calculate Euclidean distances between the observations (I only printed out a glimpse, please see the first row of it).
 ```{r}
 #reload and standardize the Boston dataset
 boston2 <- Boston
 scaled2 <- scale(boston2)
 scaled2 <- as.data.frame(boston2)
 
-dist_eu <- dist(boston2) #euclidean distances
+glimpse(dist(boston2)) #euclidean distances
 ```
 
 First, I run a k-means clustering with a random number of centroids (3). Then I determine the optimal number of clusters using the total WCSS (within cluster sum of squares). In this case, the optimal number is two (see the first figure below). Last, I run the cluster analysis again with the optimal number of clusters determined. Scatter plots of the variables with the two clusters in black and red can be seen below.
