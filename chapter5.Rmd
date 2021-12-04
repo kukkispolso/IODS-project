@@ -1,0 +1,128 @@
+# Week 5: Dimensionality reduction techniques
+
+**Exercise 1**  
+Here's the human dataset I wrangled all by myself!
+As can be seen from the summary statistics of the variables, the range of values between the countries is huge. This, of course, is natural since all kinds of countries are included (n = 155).
+
+Distributions of the variables along with scatter plots and correlation coefficients of each pair of variables are presented in the first plot. The second plot visualizes the correlations in another way: the larger the diameter of the dot, the stronger the correlation. Red implies a negative relationship between two variables, blue stands for a positive one.
+
+The distributions of gii (Gender Inequality Index) and matdeath (maternal mortality ratio) are highly right-skewed which implies that most of the countries have a positive situation in terms of gender equality and a relatively low maternal mortality rate.
+Life expectancy and expected years of education have strong negative correlations with maternal mortality ratio and adolescent birth rate. On the contrary, life expectancy correlates positively with expected years of education, and so does maternal mortality ratio with adolescent birth rate.
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(corrplot)
+human4 <- read.csv("C:/LocalData/xpoxpox/IODS-project/data/human.csv", row.names = 1)
+summary(human4)
+ggpairs(human4)
+cor(human4) %>%
+  corrplot()
+```
+
+Next, I'll perform principal component analysis (PCA) on the not standardized human data (Exercise 2) and the standardized human data (Exercise 3).
+
+**Exercise 2**  
+Here's a visualization of PCA performed on the non-scaled human data.
+This plot reveals why it is important to standardize the variables before performing PCA. As stated in the DataCamp video, "PCA is sensitive to the relative scaling of the original features [variables] and assumes that features with larger variance are more important than features with smaller variance". As can be seen in the summary of the non-standardized variables, the values of GNI range from 581 to ~1.2 million whereas the variances of the second largest variable, matdeath (maternal mortality) ranges from 1 to 1100. No wonder why GNI is the only component identified by the PCA. Thus, I simply named the component accounting for 100% of the variance in the original variables "GNI". The other component was named "The Other Components" although technically it is only the second component, not all the other ones.
+```{r}
+# print out summaries of the variables
+summary(human4)
+
+# perform and save PCA
+pca_human4_nonstd <- prcomp(human4)
+
+# save and print out summary of the results
+s_nonstd <- summary(pca_human4_nonstd)
+s_nonstd
+
+# save and print out rounded percetanges of variance captured by each PC
+pca_pr_nonstd <- round(100*s_nonstd$importance[2, ], digits = 1)
+pca_pr_nonstd
+
+# create object pc_lab to be used as axis labels
+pc_lab_nonstd <- paste0(names(pca_pr_nonstd), " (", pca_pr_nonstd, "%)")
+
+# draw a biplot
+biplot(pca_human4_nonstd, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab_nonstd[1], ylab = pc_lab_nonstd[2])
+
+# draw a biplot with names given to the components
+biplot(pca_human4_nonstd, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = paste0("GNI", " (", pca_pr_nonstd[1], "%)"), ylab = paste0("The Other Components", " (", pca_pr_nonstd[2], "%)"))
+```
+
+**Exercise 3**  
+Here's a visualization of PCA performed on the scaled human data.
+Compared to the plot visualizing the PCA on non-scaled variables, this plot is more informative. Since the variables are standardized, it is the actual variability in the features, not the range of the original variables, that determines the principal components. The component capturing ~54% of the variance in the original variables was named "Well-Being and Education". The second component capturing ~16% of the variability was named "Societal Representation".
+```{r}
+# stadardize human4
+human4_std <- scale(human4)
+
+# perform and save PCA
+pca_human4_std <- prcomp(human4_std)
+
+# save and print out summary of the results
+s_std <- summary(pca_human4_std)
+s_std
+
+# save and print out rounded percetanges of variance captured by each PC
+pca_pr_std <- round(100*s_std$importance[2, ], digits = 1)
+pca_pr_std
+
+# create object pc_lab to be used as axis labels
+pc_lab_std <- paste0(names(pca_pr_std), " (", pca_pr_std, "%)")
+
+# draw a biplot
+biplot(pca_human4_std, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = pc_lab_std[1], ylab = pc_lab_std[2])
+
+# draw a biplot with names given to the components
+biplot(pca_human4_std, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = paste0("Health and Education", " (", pca_pr_std[1], "%)"), ylab = paste0("Societal Representation", " (", pca_pr_std[2], "%)"))
+```
+
+**Exercise 4**  
+As stated in Exercise 3, I named the two principal component dimensions extracted in the PCA "Health and Education" (~54%) and "Societal Representation" (~16%).
+The first dimension comprises of variables related to female life and educational expectancies and representation on the one hand, and factors related to reproduction on the other. The former is negatively related to the latter. Broadly, these variables are associated with general and female health and education, justifying the name "Health and Education".
+The second dimension represents variables associated with the representation of women in society: their proportion in the labour force and parliament. Hence, this dimension was given the name "Societal Representation".
+
+**Exercise 5**  
+The tea dataset from the FactoMineR package contains 300 observations of 36 variables related to different ways the participants consumed tea. Here, I focus on 6 of the variables and perform MCA on them: tea type (variable Tea), accompaniment (How), package (how), place of purchase (where), and consumption at lunch (lunch).
+Based on these observations, Earl Grey tea purchased from a chain store and extracted using a tea bag is consumed alone outside lunch time. Adding sugar to tea seems as common as not adding it.
+```{r}
+# getting required packages from library
+library(FactoMineR)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+```
+
+```{r}
+# load tea data
+data(tea)
+
+# look at the structure and dimensions of the data
+dim(tea)
+
+# column names to keep in a new dataset
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+
+# select the 'keep_columns' to create the new dataset
+tea_time <- dplyr::select(tea, one_of(keep_columns))
+
+# look at the summaries and structure of the new dataset
+summary(tea_time)
+str(tea_time)
+
+# visualize the new dataset
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+Here, a multiple correspondence analysis (MCA) is performed on selected variables of the tea data (see the description above). Based on the biplot, it seems that the first dimension captures variability in place of purchase and package: unpackaged tea is often bought from tea shops whereas packaged tea finds its way to tea cups from the shelves of chain stores. The other dimension (as I see it) could be associated with whether the individual is devoted to certain tea consumption habits: some buy tea from both chain stores and tea shops and drink it regardless of packaging, while others are more precise when it comes to details.
+```{r}
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+
+# visualize MCA
+plot(mca, invisible=c("ind"), habillage = "quali", graph.type = "classic")
+```
+
