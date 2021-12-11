@@ -1,5 +1,5 @@
 # Kukka-Maaria Polso
-# 9.1.2021
+# 9.12.2021
 # Week 6 data wrangling
 # BPRS data source: https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/BPRS.txt
 # RATS data source: https://raw.githubusercontent.com/KimmoVehkalahti/MABS/master/Examples/data/rats.txt
